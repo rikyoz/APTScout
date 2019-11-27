@@ -74,7 +74,7 @@ class DynamicImportsEnumerator:
     # noinspection SpellCheckingInspection
     def __init__(self, verbose, api_db):
         self.verbose = verbose
-        self.api_db_path = api_db
+        self.api_db_path = api_db if os.path.isfile(api_db) else None
         self.api_db = None
 
         symbol_table = currentProgram.getSymbolTable()
@@ -86,24 +86,13 @@ class DynamicImportsEnumerator:
 
         # List of references (code or data) to LoadLibrary (and similar functions)
         ll_refs = []
-        lla = symbol_table.getExternalSymbol("LoadLibraryA")
-        if lla:
-            ll_refs.extend(lla.getReferences())
-        llw = symbol_table.getExternalSymbol("LoadLibraryW")
-        if llw:
-            ll_refs.extend(llw.getReferences())
-        llexa = symbol_table.getExternalSymbol("LoadLibraryExA")
-        if llexa:
-            ll_refs.extend(llexa.getReferences())
-        llexw = symbol_table.getExternalSymbol("LoadLibraryExW")
-        if llexw:
-            ll_refs.extend(llexw.getReferences())
-        gmha = symbol_table.getExternalSymbol("GetModuleHandleA")
-        if gmha:
-            ll_refs.extend(gmha.getReferences())
-        gmhw = symbol_table.getExternalSymbol("GetModuleHandleW")
-        if gmhw:
-            ll_refs.extend(gmhw.getReferences())
+        ll_symbols = ["LoadLibraryA", "LoadLibraryW",
+                      "LoadLibraryExA", "LoadLibraryExW",
+                      "GetModuleHandleA", "GetModuleHandleW"]
+        for symbol in ll_symbols:
+            ext_symbol = symbol_table.getExternalSymbol(symbol)
+            if ext_symbol:
+                ll_refs.extend(ext_symbol.getReferences())
         self.load_lib_functions = DynamicImportsEnumerator.__get_functions_containing_refs(ll_refs)
 
         # Regex for matching GetProcAddress arguments
