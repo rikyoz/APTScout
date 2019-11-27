@@ -106,7 +106,8 @@ venv.bak/
 # mypy
 .mypy_cache/
 apilogs/
-data/
+data/*/
+data/*.csv
 
 # VSCode
 .vscode/
