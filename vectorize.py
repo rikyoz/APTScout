@@ -5,7 +5,7 @@ import json
 import os
 import re
 import sys
-from apiscout.ApiVector import ApiVector
+from apiscout.apiscout.ApiVector import ApiVector
 from collections import defaultdict
 from numpy import median
 
@@ -51,66 +51,78 @@ def detect_weights(base_name, base_list):
                 return "entropy"
 
 
-def main(args, dataset_path):
-    with open(dataset_path, mode="r") as dataset_file:
-        dataset_classification = json.load(dataset_file)["samples"]["classification"]
+def unix_relpath(path, start):
+    rel_path = os.path.relpath(path, start)
+    if os.name == "nt":
+        # On Windows, relpath normalized the path and changed all / into \\
+        # However, we want use unix path separator when writing a path inside a file,
+        # since they are supported everywhere (also on Windows)!
+        rel_path = "/".join(rel_path.split("\\"))
+    return rel_path
 
-        api_vector = ApiVector(args.base)
-        base = api_vector.getWinApi1024()
-        base_weights = detect_weights(os.path.basename(args.base), base)
-        vector_size = len(base)
 
-        if args.out_file is None:
-            out_path = os.path.join(args.data_dir, "vectors")
-        else:
-            out_path = os.path.dirname(args.out_file)
+def vectorize(dataset, logs_folder, base, imports_type, data_dir, dataset_file=None, out_file=None):
+    api_vector = ApiVector(base)
+    vector_base = api_vector.getWinApi1024()
+    vector_weights = detect_weights(os.path.basename(base), vector_base)
+    vector_size = len(vector_base)
 
-        if not os.path.exists(out_path):
-            try:
-                os.makedirs(out_path)
-            except OSError as exc:  # Guard against race condition
-                if exc.errno != errno.EEXIST:
-                    raise
+    if out_file is None:
+        out_path = os.path.join(data_dir, "vectors")
+    else:
+        out_path = os.path.dirname(out_file)
 
-        if args.out_file is None:
-            args.out_file = os.path.join(out_path,
-                                         "vectors_{}_{}_{}.json".format(args.imports_type, base_weights, vector_size))
+    if not os.path.exists(out_path):
+        try:
+            os.makedirs(out_path)
+        except OSError as exc:  # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
 
-        vectors_dict = {
-            "dataset": os.path.relpath(dataset_path, out_path),
-            "base": {
-                "path": os.path.relpath(args.base, out_path),
-                "imports_type": args.imports_type,
-                "weights": base_weights,
-                "size": vector_size
-            },
-            "vectors": {},
-            "coverage": {
-                "average": 0,
-                "median": 0,
-                "details": {}
-            }
+    if out_file is None:
+        out_file = os.path.join(out_path, "vectors_{}_{}_{}.json".format(imports_type, vector_weights, vector_size))
+
+    vectors_dict = {
+        "dataset": unix_relpath(dataset_file, out_path) if dataset_file is not None else None,
+        "base": {
+            "path": unix_relpath(base, out_path),
+            "imports_type": imports_type,
+            "weights": vector_weights,
+            "size": vector_size
+        },
+        "vectors": {},
+        "coverage": {
+            "average": 0,
+            "median": 0,
+            "details": {}
         }
-        for sample, apt in dataset_classification.items():
-            sample_log_path = os.path.join(args.log_folder, "{}.json".format(sample))
-            with open(sample_log_path, mode="r") as log_file:
-                apis = json.load(log_file, cls=decoder, list_type=set)
+    }
+    for sample in dataset:
+        sample_log_path = os.path.join(logs_folder, "{}.json".format(sample))
+        with open(sample_log_path, mode="r") as log_file:
+            apis = json.load(log_file, cls=decoder, list_type=set)
 
-                if args.imports_type == "all":
-                    apis = merge_two_dicts(apis["it"], apis["dynamic"])
-                else:
-                    apis = apis[args.imports_type]
+            if imports_type == "all":
+                apis = merge_two_dicts(apis["it"], apis["dynamic"])
+            else:
+                apis = apis[imports_type]
 
-                result = api_vector.getApiVectorFromApiDictionary(apis)["user_list"]
-                coverage = result["percentage"]
-                vectors_dict["vectors"][sample] = result["vector"]
-                vectors_dict["coverage"]["details"][sample] = coverage
-                vectors_dict["coverage"]["average"] += coverage
-        vectors_dict["coverage"]["average"] /= len(vectors_dict["coverage"]["details"])
-        vectors_dict["coverage"]["median"] = median(list(vectors_dict["coverage"]["details"].values()))
+            result = api_vector.getApiVectorFromApiDictionary(apis)["user_list"]
+            coverage = result["percentage"]
+            vectors_dict["vectors"][sample] = result["vector"]
+            vectors_dict["coverage"]["details"][sample] = coverage
+            vectors_dict["coverage"]["average"] += coverage
+    vectors_dict["coverage"]["average"] /= len(vectors_dict["coverage"]["details"])
+    vectors_dict["coverage"]["median"] = median(list(vectors_dict["coverage"]["details"].values()))
 
-        with open(args.out_file, mode="w") as vectors_file:
-            json.dump(vectors_dict, vectors_file, indent=4)
+    with open(out_file, mode="w") as vectors_file:
+        json.dump(vectors_dict, vectors_file, indent=4)
+
+
+def main(dataset_file, logs_folder, base, imports_type, data_dir, out_file=None):
+    with open(dataset_file, mode="r") as dataset_file:
+        dataset = json.load(dataset_file)["samples"]["classification"]
+        vectorize(dataset, logs_folder, base, imports_type, data_dir, dataset_file, out_file)
 
 
 if __name__ == "__main__":
@@ -135,8 +147,8 @@ if __name__ == "__main__":
         print("Data directory '{}' does not exist!".format(args.data_dir))
         sys.exit(1)
 
-    dataset_path = os.path.join(args.data_dir, "dataset.json")
-    if not os.path.isfile(dataset_path):
+    dataset_file = os.path.join(args.data_dir, "dataset.json")
+    if not os.path.isfile(dataset_file):
         print("Data directory '{}' does not contain a dataset.json file!".format(args.data_dir))
         sys.exit(1)
 
@@ -149,4 +161,4 @@ if __name__ == "__main__":
         print("VectorBase file '{}' does not exist".format(args.base))
         sys.exit(1)
 
-    main(args, dataset_path)
+    main(dataset_file, **vars(args))
