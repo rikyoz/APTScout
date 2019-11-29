@@ -309,21 +309,21 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Calculates some stats of crawled API by ghidra_scout.py")
-    parser.add_argument("log_folder", help="Folder containing the json logs of ghidra_scout.py")
-    parser.add_argument("-o", "--out_dir", dest="out_dir", default=None,
+    parser.add_argument("log_folder",
+                        help="Folder containing the json logs of ghidra_scout.py")
+    parser.add_argument("-o", "--out_dir", default=None,
                         help="Output directory going to contain the calculated stats")
-    parser.add_argument("-d", "--dataset", dest="dataset", default="./data/mixed_dataset.csv",
+    parser.add_argument("-d", "--dataset", default="./data/mixed_dataset.csv",
                         help="CSV file containing metadata about the crawled files")
-    parser.add_argument("-i", "--ignore", dest="ignore", nargs="+", default=[],
-                        choices=["dotnet", "nonc", "dll", "empty", "packed"],
+    parser.add_argument("-i", "--ignore", nargs="+", default=[], choices=["dotnet", "nonc", "dll", "empty", "packed"],
                         help="Ignore executables with the specified features")
-    parser.add_argument("-m", "--min_apis", dest="min_apis", type=int, default=0,
+    parser.add_argument("-m", "--min_apis", type=int, default=0,
                         help="Ignore executables with less than the specified number of APIs")
-    parser.add_argument("-n", "--normalize", dest="normalize", action="store_true",
+    parser.add_argument("-n", "--normalize", action="store_true",
                         help="Normalize ANSI/Unicode APIs (e.g. drop W/A suffixes)")
-    parser.add_argument("-p", "--plot", dest="plot", action="store_true",
+    parser.add_argument("-p", "--plot", action="store_true",
                         help="Draw and save to file occurrence distributions plots")
-    parser.add_argument("-a", "--apt_stats", dest="apt_stats", action="store_true",
+    parser.add_argument("-a", "--apt_stats", action="store_true",
                         help="Calculate occurrences for each single apt")
     arguments = parser.parse_args()
 

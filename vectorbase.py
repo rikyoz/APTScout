@@ -86,16 +86,17 @@ def main(args, occurrences_csv, dataset_json):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Calculates an ApiVectorBase based on dataset statistics")
-    parser.add_argument("data_dir", help="Data directory containing the CSV file with the API occurrences")
-    parser.add_argument("-i", "--imports_type", dest="imports_type", choices=['all', 'it', 'dynamic'],
-                        default="all", help="Type of imports to be considered for creating the ApiVectorBase")
-    parser.add_argument("-a", "--api_csv", dest="api_csv", default="./apiscout/apiscout/data/winapi_contexts.csv",
+    parser.add_argument("data_dir",
+                        help="Data directory containing the CSV file with the API occurrences")
+    parser.add_argument("-i", "--imports_type", choices=['all', 'it', 'dynamic'], default="all",
+                        help="Type of imports to be considered for creating the ApiVectorBase")
+    parser.add_argument("-a", "--api_csv", default="./apiscout/apiscout/data/winapi_contexts.csv",
                         help="CSV file containing apiscout's categorized API list")
-    parser.add_argument("-w", "--weights", dest="weights", choices=["equal", "linear", "nonlinear", "entropy"],
-                        default="linear", help="Type of weights to be used for vectors comparison")
-    parser.add_argument("-s", "--size", dest="size", type=size_type, default=4096,
+    parser.add_argument("-w", "--weights", choices=["equal", "linear", "nonlinear", "entropy"], default="linear",
+                        help="Type of weights to be used for vectors comparison")
+    parser.add_argument("-s", "--size", type=size_type, default=4096,
                         help="Size of the output ApiVectorBase (must be a power of 2 and >= 64)")
-    parser.add_argument("-o", "--out_file", dest="out_file", default=None,
+    parser.add_argument("-o", "--out_file", default=None,
                         help="Output CSV file which will contain the ApiVectorBase desired")
     args = parser.parse_args()
 

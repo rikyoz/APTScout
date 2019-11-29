@@ -94,14 +94,16 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plots a ROC curve from ApiVectors similarity scores")
-    parser.add_argument("scores_folder", help="Directory contianing the JSON files with the scores to be plotted")
-    parser.add_argument("-f", "--filter", dest="filter", default="*",
+    parser.add_argument("scores_folder",
+                        help="Directory contianing the JSON files with the scores to be plotted")
+    parser.add_argument("-f", "--filter", default="*",
                         help="Wildcard matching patern for the score files")
-    parser.add_argument("-s", "--show", dest="show", action="store_true",
+    parser.add_argument("-s", "--show", action="store_true",
                         help="Specify if the final plot must be shown to the user")
-    parser.add_argument("-o", "--out_dir", dest="out_dir", default=None,
+    parser.add_argument("-o", "--out_dir", default=None,
                         help="Output directory going to contain the plots images")
-    parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="Show verbose output")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Show verbose output")
     arguments = parser.parse_args()
 
     logging.basicConfig(format="%(message)s", level=logging.INFO if arguments.verbose else logging.WARNING)

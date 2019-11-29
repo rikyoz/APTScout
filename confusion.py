@@ -189,14 +189,15 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Matches ApiVectors against each other and calculates matching stats")
-    parser.add_argument("scores_file", help="JSON file containing all the matching scores to plot")
-    parser.add_argument("-r", "--rule", dest="rule", choices=["max", "knn"], default="max",
+    parser.add_argument("scores_file",
+                        help="JSON file containing all the matching scores to plot")
+    parser.add_argument("-r", "--rule", choices=["max", "knn"], default="max",
                         help="Rule for choosing the label of a sample: max score or most frequent neighbor label")
-    parser.add_argument("-t", "--threshold", dest="threshold", type=restricted_float, default=0.5,
+    parser.add_argument("-t", "--threshold", type=restricted_float, default=0.5,
                         help="Threshold value after which two samples are considered of the same APT group")
-    parser.add_argument("-s", "--show", dest="show", action="store_true",
+    parser.add_argument("-s", "--show", action="store_true",
                         help="Specify if the final plot must be shown to the user")
-    parser.add_argument("-o", "--out_dir", dest="out_dir", default=None,
+    parser.add_argument("-o", "--out_dir", default=None,
                         help="Output directory going to contain the plots images")
     arguments = parser.parse_args()
 

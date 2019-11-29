@@ -125,12 +125,14 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Matches ApiVectors against each other to calculate similarity scores")
-    parser.add_argument("vectors_file", help="JSON file containing all the ApiVectors to be analyzed")
-    parser.add_argument("-t", "--threads", dest="threads", default=None, type=thread_type,
+    parser.add_argument("vectors_file",
+                        help="JSON file containing all the ApiVectors to be analyzed")
+    parser.add_argument("-t", "--threads", default=None, type=thread_type,
                         help="Number of threads to use for calculating the scores")
-    parser.add_argument("-o", "--out_file", dest="out_file", default=None,
+    parser.add_argument("-o", "--out_file", default=None,
                         help="The output JSON file which will contain the scores")
-    parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="Show verbose output")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Show verbose output")
     arguments = parser.parse_args()
 
     if not os.path.isfile(arguments.vectors_file):
