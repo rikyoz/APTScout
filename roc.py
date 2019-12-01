@@ -11,9 +11,16 @@ import sys
 from collections import defaultdict
 from matplotlib.ticker import AutoMinorLocator
 from sklearn.metrics import roc_curve, auc
+from tqdm import tqdm
 
 
-colors = ["#1"]
+def size_type(x):
+    x = int(x)
+    if x < 64:
+        raise argparse.ArgumentTypeError("Minimum vector size is 64")
+    if x & (x - 1) != 0:  # if x is not a power of 2
+        raise argparse.ArgumentTypeError("Vector size must be a power of 2")
+    return x
 
 
 def calculate_roc_curve(scores, classes):
@@ -63,16 +70,22 @@ def plot_roc(roc_dict, out_file):
     fig.savefig(out_file)
 
 
-def main(args):
-    logging.info("Calculating ROC curves...")
+def main(scores_folder, imports_types, weights, sizes, display, out_dir, verbose):
+    # logging.info("Calculating ROC curves...")
+    text = "Calculating ROC curves... "
     roc_dict = {}
-    for filename in os.listdir(args.scores_folder):
-        if not fnmatch.fnmatch(filename, args.filter):
-            continue
-        with open(os.path.join(args.scores_folder, filename), mode="r") as scores_file:
+    for filename in tqdm(os.listdir(scores_folder), desc=text, unit=" roc"):
+        with open(os.path.join(scores_folder, filename), mode="r") as scores_file:
             scores_dict = json.load(scores_file)
+            base = scores_dict["base"]
+            if imports_types is not None and base["imports_type"] not in imports_types:
+                continue
+            if weights is not None and base["weights"] not in weights:
+                continue
+            if sizes is not None and base["size"] not in sizes:
+                continue
 
-            dataset_path = os.path.normpath(os.path.join(args.scores_folder, scores_dict["dataset"]))
+            dataset_path = os.path.normpath(os.path.join(scores_folder, scores_dict["dataset"]))
             if not os.path.isfile(dataset_path):
                 print("Dataset file '{}' of scores file '{}' does not exist".format(dataset_path, filename))
                 sys.exit(1)
@@ -81,14 +94,22 @@ def main(args):
                 classes = json.load(dfp)["samples"]["classification"]
                 base = tuple(scores_dict["base"].values())[1:]
                 roc_dict[base] = calculate_roc_curve(scores_dict["scores"], classes)
-    logging.info("  COMPLETED")
 
     if len(roc_dict) > 0:
-        roc_path = os.path.join(args.out_dir, "roc.svg")
-        logging.info("Plotting the results to '{}'... ".format(roc_path))
+        suffixes = []
+        if imports_types is not None:
+            suffixes.append("-".join(imports_types))
+        if weights is not None:
+            suffixes.append("-".join(weights))
+        if sizes is not None:
+            suffixes.append("-".join(str(s) for s in sizes))
+        roc_path = os.path.join(out_dir, "{}.svg".format("_".join(["roc"] + suffixes)))
+
+        logging.info("Plotting the results to '{}'... ".format(os.path.basename(roc_path)))
         plot_roc(roc_dict, roc_path)
         logging.info("  COMPLETED")
-        if args.show:
+
+        if display:
             plt.show()
 
 
@@ -96,28 +117,32 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plots a ROC curve from ApiVectors similarity scores")
     parser.add_argument("scores_folder",
                         help="Directory contianing the JSON files with the scores to be plotted")
-    parser.add_argument("-f", "--filter", default="*",
-                        help="Wildcard matching patern for the score files")
-    parser.add_argument("-s", "--show", action="store_true",
+    parser.add_argument("-i", "--imports_types", nargs="+", choices=['all', 'it', 'dynamic'],
+                        help="Plot only scores calculated from vectors built from the specified types of imports")
+    parser.add_argument("-w", "--weights", nargs="+", choices=["equal", "linear", "nonlinear", "entropy"],
+                        help="Plot only scores calculated using the specified types of weights")
+    parser.add_argument("-s", "--sizes", nargs="+", type=size_type,
+                        help="Plot only scores calculated from vectors with the specified sizes")
+    parser.add_argument("-d", "--display", action="store_true",
                         help="Specify if the final plot must be shown to the user")
-    parser.add_argument("-o", "--out_dir", default=None,
+    parser.add_argument("-o", "--out_dir",
                         help="Output directory going to contain the plots images")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Show verbose output")
-    arguments = parser.parse_args()
+    args = parser.parse_args()
 
-    logging.basicConfig(format="%(message)s", level=logging.INFO if arguments.verbose else logging.WARNING)
+    logging.basicConfig(format="%(message)s", level=logging.INFO if args.verbose else logging.WARNING)
 
-    if not os.path.isdir(arguments.scores_folder):
-        logging.error("Scores folder '{}' does not exist!".format(arguments.scores_folder))
+    if not os.path.isdir(args.scores_folder):
+        logging.error("Scores folder '{}' does not exist!".format(args.scores_folder))
         sys.exit(1)
 
-    if arguments.out_dir is None:
-        arguments.out_dir = os.path.join(os.path.dirname(os.path.normpath(arguments.scores_folder)), "plots")
-    if not os.path.exists(arguments.out_dir):
-        os.makedirs(arguments.out_dir)
-    elif not os.path.isdir(arguments.out_dir):
-        print("Invalid output dir '{}'".format(arguments.out_dir))
+    if args.out_dir is None:
+        args.out_dir = os.path.join(os.path.dirname(os.path.normpath(args.scores_folder)), "plots")
+    if not os.path.exists(args.out_dir):
+        os.makedirs(args.out_dir)
+    elif not os.path.isdir(args.out_dir):
+        print("Invalid output dir '{}'".format(args.out_dir))
         sys.exit(1)
 
-    main(arguments)
+    main(**vars(args))
