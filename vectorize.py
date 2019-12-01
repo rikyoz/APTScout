@@ -5,7 +5,7 @@ import json
 import os
 import re
 import sys
-from apiscout.apiscout.ApiVector import ApiVector
+from apiscout.ApiVector import ApiVector
 from collections import defaultdict
 from numpy import median
 
@@ -120,8 +120,8 @@ def vectorize(dataset, logs_folder, base, imports_type, data_dir, dataset_file=N
 
 
 def main(dataset_file, logs_folder, base, imports_type, data_dir, out_file=None):
-    with open(dataset_file, mode="r") as dataset_file:
-        dataset = json.load(dataset_file)["samples"]["classification"]
+    with open(dataset_file, mode="r") as dfp:
+        dataset = json.load(dfp)["samples"]["classification"]
         vectorize(dataset, logs_folder, base, imports_type, data_dir, dataset_file, out_file)
 
 
