@@ -127,7 +127,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Matches ApiVectors against each other to calculate similarity scores")
     parser.add_argument("vectors_file",
                         help="JSON file containing all the ApiVectors to be analyzed")
-    parser.add_argument("-t", "--threads", default=None, type=thread_type,
+    parser.add_argument("-t", "--threads", default=multiprocessing.cpu_count(), type=thread_type,
                         help="Number of threads to use for calculating the scores")
     parser.add_argument("-o", "--out_file", default=None,
                         help="The output JSON file which will contain the scores")
@@ -138,9 +138,6 @@ if __name__ == "__main__":
     if not os.path.isfile(arguments.vectors_file):
         print("Vectors file '{}' does not exist".format(arguments.vectors_file))
         sys.exit(1)
-
-    if arguments.threads is None:
-        arguments.threads = multiprocessing.cpu_count()
 
     logging.basicConfig(format="%(message)s", level=logging.INFO if arguments.verbose else logging.WARNING)
 
