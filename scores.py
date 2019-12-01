@@ -13,7 +13,7 @@ from apiscout.ApiVector import ApiVector
 from collections import defaultdict, OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from itertools import combinations, groupby, repeat
-from multiprocessing import Pool
+from multiprocessing import Pool, freeze_support
 from tqdm import tqdm
 
 
@@ -34,20 +34,22 @@ def split_jobs(job_list, wanted_parts=1):
     return [job_list[i*length // wanted_parts: (i+1)*length // wanted_parts] for i in range(wanted_parts)]
 
 
-def worker_function(worker_id, api_vector, jobs, vectors, verbose):
+def worker_function(worker_id, total_workers, api_vector, jobs, vectors, verbose):
     # print("[thread {}] args: {}, {}, {}, {}".format(thread_id, api_vector, len(jobs), id(vectors), verbose))
     try:
         # count = 0
         # total = len(jobs)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            text = "worker #{:02d}: ".format(worker_id)
+            text = "[Worker {:02d}/{:02d}]".format(worker_id + 1, total_workers)
             scores = defaultdict(dict)
-            for sample1, sample2 in tqdm(jobs, position=worker_id, desc=text, unit=" scores"):
+            progress = tqdm(jobs, position=worker_id, desc=text, unit=" scores", leave=False)
+            for sample1, sample2 in progress:
                 score = api_vector.matchVectors(vectors[sample1], vectors[sample2])
                 scores[sample1][sample2] = score if not math.isnan(score) else 0.0
                 scores[sample2][sample1] = scores[sample1][sample2]
                 # logging.info("[worker {:02d}] job progress: {:.2f}%".format(worker_id, 100.0 * (count / total)))
+            progress.display("", pos=0)
             return scores
     except Exception as ex:
         print(str(ex))
@@ -84,14 +86,17 @@ def main(args):
             sys.exit(1)
 
         scores = {}
-        with Pool(args.threads) as pool:
+        freeze_support()  # for Windows support
+        with Pool(args.threads, initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),)) as pool:
             api_vector = ApiVector(vectorbase_path)
+            logging.info("Calculating the scores...")
             results = []
             for i in range(args.threads):
-                task_args = (i, api_vector, splitted_jobs[i], vectors, args.verbose)
+                task_args = (i, args.threads, api_vector, splitted_jobs[i], vectors, args.verbose)
                 results.append(pool.apply_async(worker_function, args=task_args))
             pool.close()
             pool.join()
+            logging.info("  COMPLETED")
             logging.info("Merging the results... ")
             scores = merge_dictionaries([res.get() for res in results])
             logging.info("  COMPLETED")
