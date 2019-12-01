@@ -74,7 +74,7 @@ def main(scores_folder, imports_types, weights, sizes, display, out_dir, verbose
     # logging.info("Calculating ROC curves...")
     text = "Calculating ROC curves... "
     roc_dict = {}
-    for filename in tqdm(os.listdir(scores_folder), desc=text, unit=" roc"):
+    for filename in tqdm(os.listdir(scores_folder), desc=text, unit="roc"):
         with open(os.path.join(scores_folder, filename), mode="r") as scores_file:
             scores_dict = json.load(scores_file)
             base = scores_dict["base"]
