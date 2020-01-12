@@ -177,7 +177,7 @@ def main(args):
             "dlls": 0,
             "packed": 0,
             "empty": 0,
-            "per_apt": defaultdict(int),
+            "per_apt": defaultdict(lambda: {"total": 0, "dotnet": 0, "nonc": 0, "dlls": 0, "packed": 0, "empty": 0}),
             "classification": {}
         },
         "apts": {
@@ -247,6 +247,7 @@ def main(args):
                     continue
                 if len(api_log["all"]) == 0:
                     dataset_stats["samples"]["empty"] += 1
+                    dataset_stats["samples"]["per_apt"][apt]["empty"] += 1
                 if args.min_apis > 0 and count_apis(api_log["all"]) < args.min_apis:
                     continue
 
@@ -257,15 +258,19 @@ def main(args):
 
             if row["dll"] == "True":
                 dataset_stats["samples"]["dlls"] += 1
+                dataset_stats["samples"]["per_apt"][apt]["dlls"] += 1
             if row[".net executable"] == "1":
                 dataset_stats["samples"]["dotnet"] += 1
+                dataset_stats["samples"]["per_apt"][apt]["dotnet"] += 1
             if is_any_of(nonc_keys, row):
                 dataset_stats["samples"]["nonc"] += 1
+                dataset_stats["samples"]["per_apt"][apt]["nonc"] += 1
             if is_any_of(packed_keys, row):
                 dataset_stats["samples"]["packed"] += 1
+                dataset_stats["samples"]["per_apt"][apt]["packed"] += 1
 
             dataset_stats["samples"]["total"] += 1
-            dataset_stats["samples"]["per_apt"][apt] += 1
+            dataset_stats["samples"]["per_apt"][apt]["total"] += 1
             dataset_stats["samples"]["classification"][row["md5"]] = apt
             dataset[row["md5"]] = apt
 

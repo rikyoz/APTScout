@@ -31,36 +31,43 @@ def classify_dataset(rule, threshold, samples_dict, scores_dict):
     for sample, data in scores_dict.items():
         true_class = samples_dict["classification"][sample]
 
-        classes_per_score = defaultdict(set)
         class_frequency = Counter()
+        class_frequency_per_score = defaultdict(Counter)
         for other_sample, score in data.items():
             other_class = samples_dict["classification"][other_sample]
             if score > threshold:
-                classes_per_score[score].add(other_class)
                 class_frequency[other_class] += 1
+                class_frequency_per_score[score][other_class] += 1
 
         pred_class = "Unknown"
-        if rule == "max" and len(classes_per_score) > 0:
+        if rule == "max" and len(class_frequency_per_score) > 0:
             # Max similarity score among the other samples
-            max_score = sorted(classes_per_score, reverse=True)[0]
+            max_score = sorted(class_frequency_per_score, reverse=True)[0]
             # APT classes in which at least a sample obtained the max similarity score
-            max_score_classes = classes_per_score[max_score]
+            max_score_classes = class_frequency_per_score[max_score]
             if len(max_score_classes) == 1:
                 # Only one APT class has a sample with the maximum similarity score
-                pred_class = max_score_classes.pop()
+                pred_class = list(max_score_classes)[0]
             else:
                 # More than one APT class has a sample having the maximum similarity score, hence we have to look also
                 # at the most frequent class among the one with maximum scores (i.e., the class with the maximum number
-                # of samples whose similarity score is above the threshold, normalized by the total number of samples
-                # in the dataset that belong to that class).
-                # Note: normalization and extraction of the most frequent happen in the following if.
-                class_frequency = Counter({k: class_frequency[k] for k in max_score_classes})
+                # of samples whose similarity score is above the threshold and has the maximum score, normalized
+                # by the total number of samples in the dataset that belong to that class).
+                for max_score_class in max_score_classes:  # normalization
+                    max_score_classes[max_score_class] /= samples_dict["per_apt"][max_score_class]["total"]
+
+                most_frequent_max_classes = max_score_classes.most_common(2)
+                if most_frequent_max_classes[0][1] != most_frequent_max_classes[1][1]:
+                    # the most frequent classes have different frequency, so we can choose the most frequent one
+                    pred_class = most_frequent_max_classes[0][0]
+                else:
+                    # the most frequent classes have the same frequency, we will look at the class with most frequent
+                    # samples above the threshold (not necessarily having the maximum score)
+                    class_frequency = Counter({k: class_frequency[k] for k in max_score_classes})
 
         if (rule == "knn" or pred_class == "Unknown") and len(class_frequency) > 0:
-            # Note: if, not elif, since if rule == max but pred_class is still "Unknown" we must search for the
-            #       most frequent neigbor class among those having a max similarity score!
             for frequent_class in class_frequency:
-                class_frequency[frequent_class] /= samples_dict["per_apt"][frequent_class]
+                class_frequency[frequent_class] /= samples_dict["per_apt"][frequent_class]["total"]
             frequent_classes = class_frequency.most_common()
             most_frequent_classes = set()
             for frequent_class, frequency in frequent_classes:
