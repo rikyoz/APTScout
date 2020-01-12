@@ -298,11 +298,11 @@ def main(args):
             for apt, counters in api_counters["per_apt"].items():
                 write_stats_csv(per_apt_path, counters, import_type, apt)
 
-        dist_svg = os.path.join(plots_dir, "api_dist_{}.svg".format(import_type))
+        dist_svg = os.path.join(plots_dir, "api_dist_{}.svgz".format(import_type))
         xlabel = "API function ({})".format("it + dynamic" if import_type == "all" else import_type)
         plot_distribution(api_counters[import_type], "Occurrence in dataset", xlabel, dist_svg)
 
-        size_dist_svg = os.path.join(plots_dir, "size_dist_{}.svg".format(import_type))
+        size_dist_svg = os.path.join(plots_dir, "size_dist_{}.svgz".format(import_type))
         xlabel = "Number of entries ({})".format("it + dynamic" if import_type == "all" else import_type)
         plot_distribution(dataset_stats["apis"]["dist"][import_type], "Occurrence in dataset",
                           xlabel, size_dist_svg, False, True)
@@ -344,7 +344,7 @@ if __name__ == "__main__":
         if len(arguments.ignore) == 0 and arguments.min_apis == 0:
             folder_name = "all"
         else:
-            ignored_list = arguments.ignore + ["min{}".format(arguments.min_apis)]
+            ignored_list = arguments.ignore + (["min{}".format(arguments.min_apis)] if arguments.min_apis > 0 else [])
             folder_name = "_".join(["no{}".format(ign) for ign in ignored_list])
         arguments.out_dir = os.path.join("data",
                                          "normalized" if arguments.normalize else "raw",

@@ -103,7 +103,7 @@ def main(scores_folder, imports_types, weights, sizes, display, out_dir, verbose
             suffixes.append("-".join(weights))
         if sizes is not None:
             suffixes.append("-".join(str(s) for s in sizes))
-        roc_path = os.path.join(out_dir, "{}.svg".format("_".join(["roc"] + suffixes)))
+        roc_path = os.path.join(out_dir, "{}.svgz".format("_".join(["roc"] + suffixes)))
 
         logging.info("Plotting the results to '{}'... ".format(os.path.basename(roc_path)))
         plot_roc(roc_dict, roc_path)

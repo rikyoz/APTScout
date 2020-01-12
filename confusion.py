@@ -149,7 +149,7 @@ def plot_classification(confusion_path, y_true, y_pred, params):
     for index, apt_cnf_matrix in enumerate(mcnf_matrix):
         apt = apt_classes[index]
         classes = ["Non " + apt, apt]
-        apt_cnf_file = os.path.join(confusion_path, "confusion_{}.svg".format(apt.replace(" ", "_")))
+        apt_cnf_file = os.path.join(confusion_path, "confusion_{}.svgz".format(apt.replace(" ", "_")))
         plot_confusion_matrix(apt_cnf_matrix, classes, apt_cnf_file, params, apt)
         plt.close()
 
@@ -168,7 +168,7 @@ def plot_classification(confusion_path, y_true, y_pred, params):
     apt_classes.append("Unknown")
     cnf_matrix = confusion_matrix(y_true, y_pred, labels=apt_classes)
     cnf_matrix = cnf_matrix[:-1, :]  # remove unnecessary Unknown row
-    cnf_file = os.path.join(confusion_path, "confusion.svg")
+    cnf_file = os.path.join(confusion_path, "confusion.svgz")
     plot_confusion_matrix(cnf_matrix, apt_classes, cnf_file, params)
     return stats
 
